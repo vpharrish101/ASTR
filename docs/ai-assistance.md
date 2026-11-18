@@ -2,20 +2,8 @@
 title: "ASTR AI assistance"
 ---
 
-Codex materially assisted with assessment interpretation, architecture research,
-implementation, refactoring, tests, evaluation, and documentation. The developer
-chose the small requirements DSL, required library-first implementation and a
-bounded scope, reviewed the plan, and ran the live Ollama development batches locally.
+Codex was primarily used for rapid designing and implementation across all four stages, though with my verification throughout. The problem statement was relatively new to me, so I initially took some time to understand the domain and the underlying concepts. I used Codex to speed up this process, mainly by explaining unfamiliar concepts, exploring implementation approaches, prototyping, and finding relevant materials and research papers.
 
-We checked the implementation and reports against the assessment PDF. Verification
-included the independently authored routing oracle and frozen expected labels,
-offline test runs, replay of reported counterexamples, and the frozen checkpoint,
-final, and ablated evaluations. The custom code binds typed conditions to Z3 and
-creates evidence-backed reports. Lark, Pydantic, graphlib, the Python AST library,
-and Z3 supply parsing, validation, graph ordering, code inspection, and solving.
-The engineering note preserves observed failures with their fixes and regressions.
+The overall architecture and design were constructed by me, with Codex assisting in understanding the different approaches and their trade-offs. All four stages have been functionally verified by me against the test cases and evaluation scenarios.
 
-The tested Ollama batch provides integration evidence alongside the offline
-evaluation. Scripted fake-client tests have a separate purpose: validating
-response checks and failure handling. Model suggestions never control approvals,
-deterministic coverage, or final verdicts.
+Given the tight implementation deadline, the code has only undergone an overview-level review for correctness, rather than the thorough line-by-line review I would normally do before shipping. If given more time, I would go through the implementation, edge cases, and architecture more thoroughly before considering it complete. 
