@@ -27,4 +27,4 @@ In [`d09_exclusive_boundary`](../data/development/d09_exclusive_boundary.json), 
 | Spec | `normal_queue`, with the faulty condition at `support_spec` v1, `/rules/4/when` |
 | Finding | `route_mismatch`, a blocker tied to R5 |
 
-The report keeps the replay paths under `findings` and the per-rule results under `coverage` and `checks`. The symbolic checks are in [`src/stage2/check.py`](../src/stage2/check.py). Concrete replay is in [`src/stage2/replay.py`](../src/stage2/replay.py).
+The report keeps the replay paths under `findings` and the per-rule results under `coverage` and `checks`. The [Pydantic contracts](../src/stage2/contracts.py) define those fields. The [solver module](../src/stage2/solver.py) encodes the ticket domain and routing logic in Z3. The [review flow](../src/stage2/check.py) runs the comparisons and assembles the evidence report. Concrete ticket replay is in [`replay.py`](../src/stage2/replay.py).

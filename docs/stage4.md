@@ -33,3 +33,5 @@ python -m evaluation.run --verify --output reports/stage4-offline.json
 ```
 
 The command runs **80 offline tests**, prints the metrics, and saves the per-bundle reports to `reports/stage4-offline.json`. The submitted offline results are in [`evaluation/results/offline.json`](../evaluation/results/offline.json), and the separate live results are in [`evaluation/results/live-development.json`](../evaluation/results/live-development.json). The [engineering note](engineering-note.pdf) includes the two debugging examples and their fixes.
+
+The [submission freeze](../evaluation/implementation-freeze-submission.json) matches the hashes in the saved offline results. The [current reproduction freeze](../evaluation/implementation-freeze.json) covers the later Stage 2 and Stage 3 file splits. A fresh run matched every submitted verdict, finding, and counterexample. Timings are measured again on each run.

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.stage2.check import review
+from src.stage3 import clients
 from src.stage3 import model_review as model
 from src.utils.contracts import Bundle
 
@@ -113,9 +113,10 @@ def test_response_cannot_be_reused_for_a_new_workflow_version():
     assert second.model_review.reason == "stale_response"
 
 
-def test_model_failure_preserves_deterministic_blocker():
+def test_model_failure_preserves_deterministic_blocker(monkeypatch):
     bundle = load("d09_exclusive_boundary")
-    deterministic = review(bundle)
+    deterministic, prepared = model.review_with_preparation(bundle)
+    monkeypatch.setattr(model, "review_with_preparation", lambda *args, **kwargs: (deterministic, prepared))
     client = model.FakeClient([{"event": "timeout"}, {"event": "timeout"}])
     report = model.assisted_review(bundle, client)
     assert report.status == "CHANGES_REQUIRED"
@@ -225,7 +226,7 @@ def test_ollama_requests_bounded_structured_output(monkeypatch, stop, error):
                            "message": {"content": "{}"}}).encode()
         return subprocess.CompletedProcess(command, 0, stdout=body + b"\n200")
 
-    monkeypatch.setattr(model.subprocess, "run", respond)
+    monkeypatch.setattr(clients.subprocess, "run", respond)
     client = model.OllamaClient()
     request = json.dumps({"response_schema": schema}).encode()
     if error:

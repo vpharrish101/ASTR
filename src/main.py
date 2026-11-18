@@ -28,7 +28,7 @@ def main() -> int:
         parser.error("model options require --review")
     if args.schema:
         if args.schema == "review":
-            from .stage2.check import Review
+            from .stage2.contracts import Review
 
             contract = Review
         elif args.schema == "assisted-review":

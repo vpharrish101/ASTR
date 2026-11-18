@@ -99,3 +99,14 @@ The 44 Stage 1 tests passed before the sampled and exact semantic runs. The froz
 - Validate the runner and ablation on the development split. Freeze source, tests, dependencies and the dataset manifest before opening the eight reserved bundles. The implementation freeze manifest SHA-256 is `d42185f5bd2dfc761dbd0b223e0269359c245aea1a5f6754447f4a46f59112a4`.
 - Final verdicts matched 24/24 development and 8/8 reserved cases. The full reviewer found 16 defects. The checkpoint found 9, and the ablation found 4. The final reviewer cited all 16 expected defect locations and produced 22 useful witnesses. All 80 zero-model Stage 1 and Stage 2 tests passed, including the new ablation regression.
 - Preserve the user's actual Ollama development batch separately. It made 22 calls with one retry and a median call time of 6.542 seconds. The submitted live reports cover the development split. The PDF note is two pages and the AI assistance disclosure is one page.
+
+## Stage 3 module split
+
+- Group Stage 3's Pydantic models in `contracts.py` and the two transport adapters in `clients.py`. Keep request construction, validation, retries, and report assembly in `model_review.py`. The CLI and existing public imports still work.
+- The blocker-preservation test compared two independent solver runs, which could select different valid tickets. Give both model paths the same deterministic report so the test checks whether Stage 3 preserves that report's evidence.
+- All 104 tests passed. The schema and 48 development reports matched their pre-refactor versions apart from timing. Preserve the submission hashes in `evaluation/implementation-freeze-submission.json` and record the modular version in the active freeze. Reproduced the submitted offline reports on all 32 bundles, including the reserved split.
+
+## Stage 2 module split
+
+- Move the Pydantic reports and evidence models to `contracts.py` and the Z3 domain encoding and search to `solver.py`. Keep comparison orchestration and finding construction in `check.py`, and keep concrete ticket replay in `replay.py`.
+- All 104 tests passed. Both CLI schemas and the 48 development reports matched their pre-refactor versions apart from timing. The active reproduction freeze includes both module splits, and the submitted evaluation reproduced on all 32 bundles.
