@@ -1,0 +1,119 @@
+{
+  "witness_ticket_defaults": {
+    "category": "billing",
+    "fraud": false,
+    "urgent": false,
+    "tier": "standard",
+    "waiting": 0
+  },
+  "cases": {
+    "d01_reference": {"status": "PASS"},
+    "d02_approved_revision": {"status": "PASS"},
+    "d03_distributed_condition": {"status": "PASS"},
+    "d04_renamed_reordered": {"status": "PASS"},
+    "d05_superseded_approval": {"status": "PASS"},
+    "d06_integer_equivalence": {"status": "PASS"},
+    "d07_unapproved_threshold": {
+      "status": "CHANGES_REQUIRED", "rule": "R5",
+      "evidence": {"artifact": "support_spec", "version": "v1", "location": "/rules/4/when"},
+      "witness": {"overrides": {"waiting": 1200}, "expected_route": "normal_queue", "actual_route": "escalation"}
+    },
+    "d08_omitted_exception": {
+      "status": "CHANGES_REQUIRED", "rule": "R4",
+      "evidence": {"artifact": "support_policy", "version": "v1", "location": "line 4:1"},
+      "witness": {"overrides": {"tier": "enterprise"}, "expected_route": "enterprise_queue", "actual_route": "normal_queue"}
+    },
+    "d09_exclusive_boundary": {
+      "status": "CHANGES_REQUIRED", "rule": "R5",
+      "evidence": {"artifact": "support_spec", "version": "v1", "location": "/rules/4/when"},
+      "witness": {"overrides": {"waiting": 1800}, "expected_route": "escalation", "actual_route": "normal_queue"}
+    },
+    "d10_urgency_before_missing": {
+      "status": "CHANGES_REQUIRED", "rule": "R1",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/entry"},
+      "witness": {"overrides": {"category": null, "urgent": true}, "expected_route": "manual_review", "actual_route": "priority_queue"}
+    },
+    "d11_wrong_true_edge": {
+      "status": "CHANGES_REQUIRED", "rule": "R5",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/nodes/4/if_true"},
+      "witness": {"overrides": {"waiting": 1800}, "expected_route": "escalation", "actual_route": "normal_queue"}
+    },
+    "d12_missing_false_edge": {
+      "status": "CHANGES_REQUIRED", "rule": "R6",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/nodes/4/if_false"},
+      "witness": {"overrides": {}, "expected_route": "normal_queue", "actual_route": "NO_ROUTE"}
+    },
+    "d13_code_disagrees": {
+      "status": "CHANGES_REQUIRED", "rule": "R5",
+      "evidence": {"artifact": "wait_check", "version": "v1", "location": "line 2:12"},
+      "witness": {"overrides": {"waiting": 1500}, "expected_route": "normal_queue", "actual_route": "escalation"}
+    },
+    "d14_wrong_unit": {
+      "status": "CHANGES_REQUIRED", "rule": "R5",
+      "evidence": {"artifact": "support_spec", "version": "v1", "location": "/rules/4/when"},
+      "witness": {"overrides": {"waiting": 30}, "expected_route": "normal_queue", "actual_route": "escalation"}
+    },
+    "d15_ignored_approval": {
+      "status": "CHANGES_REQUIRED", "rule": "R5", "effective_wait_seconds": 1500,
+      "evidence": {"artifact": "approval_log", "version": "v1", "location": "record approve_25_next"},
+      "witness": {"overrides": {"waiting": 1500}, "expected_route": "escalation", "actual_route": "normal_queue"}
+    },
+    "d16_broadened_exception": {
+      "status": "CHANGES_REQUIRED", "rule": "R4",
+      "evidence": {"artifact": "support_spec", "version": "v1", "location": "/rules/3/when"},
+      "witness": {"overrides": {"category": "general", "tier": "enterprise"}, "expected_route": "normal_queue", "actual_route": "enterprise_queue"}
+    },
+    "d17_wrong_exception_route": {
+      "status": "CHANGES_REQUIRED", "rule": "R4",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/nodes/3/if_true"},
+      "witness": {"overrides": {"category": "technical", "tier": "enterprise"}, "expected_route": "enterprise_queue", "actual_route": "manual_review"}
+    },
+    "d18_invented_upper_bound": {
+      "status": "CHANGES_REQUIRED", "rule": "R5",
+      "evidence": {"artifact": "support_spec", "version": "v1", "location": "/rules/4/when"},
+      "witness": {"overrides": {"waiting": 3601}, "expected_route": "escalation", "actual_route": "normal_queue"}
+    },
+    "d19_conflicting_approvals": {
+      "status": "INCOMPLETE", "rule": "R5", "stage1_issue": "approval_conflict",
+      "evidence": {"artifact": "approval_log", "version": "v1", "location": "record approve_24"}
+    },
+    "d20_unsupported_source": {
+      "status": "INCOMPLETE", "rule": "R4", "stage1_issue": "unsupported_source",
+      "evidence": {"artifact": "support_policy", "version": "v1", "location": "line 4"}
+    },
+    "d21_unsupported_python": {
+      "status": "INCOMPLETE", "rule": "R5", "stage1_issue": "unsupported_python",
+      "evidence": {"artifact": "wait_check", "version": "v1", "location": "line 2"}
+    },
+    "d22_model_timeout": {"status": "INCOMPLETE", "model_failure": "timeout"},
+    "d23_model_invalid_json": {"status": "INCOMPLETE", "model_failure": "invalid_json"},
+    "d24_model_invented_citation": {"status": "INCOMPLETE", "model_failure": "invented_reference"},
+    "r01_rejected_change": {"status": "PASS"},
+    "r02_equivalent_branches": {"status": "PASS"},
+    "r03_code_stale_after_approval": {
+      "status": "CHANGES_REQUIRED", "rule": "R5", "effective_wait_seconds": 1500,
+      "evidence": {"artifact": "wait_check", "version": "v2", "location": "line 2:12"},
+      "witness": {"overrides": {"waiting": 1500}, "expected_route": "escalation", "actual_route": "normal_queue"}
+    },
+    "r04_urgent_before_fraud": {
+      "status": "CHANGES_REQUIRED", "rule": "R2",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/nodes/0/if_false"},
+      "witness": {"overrides": {"fraud": true, "urgent": true}, "expected_route": "manual_review", "actual_route": "priority_queue"}
+    },
+    "r05_wrong_fallback": {
+      "status": "CHANGES_REQUIRED", "rule": "R6",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/nodes/9/route"},
+      "witness": {"overrides": {}, "expected_route": "normal_queue", "actual_route": "priority_queue"}
+    },
+    "r06_dangling_target": {
+      "status": "CHANGES_REQUIRED", "rule": "R4",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/nodes/3/if_true"},
+      "witness": {"overrides": {"tier": "enterprise"}, "expected_route": "enterprise_queue", "actual_route": "NO_ROUTE"}
+    },
+    "r07_missing_code_revision": {
+      "status": "INCOMPLETE", "rule": "R5", "stage1_issue": "missing_snippet",
+      "evidence": {"artifact": "support_workflow", "version": "v1", "location": "/nodes/4/code"}
+    },
+    "r08_model_conflicting_claim": {"status": "INCOMPLETE", "model_failure": "conflicting_claim"}
+  }
+}

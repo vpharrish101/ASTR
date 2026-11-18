@@ -1,0 +1,717 @@
+{
+  "$defs": {
+    "Approval": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "approved",
+            "proposed",
+            "rejected"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "target_revision": {
+          "minLength": 1,
+          "title": "Target Revision",
+          "type": "string"
+        },
+        "target_rule": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Target Rule",
+          "type": "string"
+        },
+        "replacement": {
+          "title": "Replacement",
+          "type": "string"
+        },
+        "supersedes": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+            "type": "string"
+          },
+          "title": "Supersedes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "decision",
+        "target_revision",
+        "target_rule",
+        "replacement"
+      ],
+      "title": "Approval",
+      "type": "object"
+    },
+    "ApprovalLog": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "records": {
+          "items": {
+            "$ref": "#/$defs/Approval"
+          },
+          "title": "Records",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "records"
+      ],
+      "title": "ApprovalLog",
+      "type": "object"
+    },
+    "Artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "Artifact",
+      "type": "object"
+    },
+    "BooleanField": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "boolean",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "BooleanField",
+      "type": "object"
+    },
+    "BooleanGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "all",
+            "any"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "all": "#/$defs/BooleanGroup",
+                "any": "#/$defs/BooleanGroup",
+                "comparison": "#/$defs/Comparison",
+                "presence": "#/$defs/Presence"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Comparison"
+              },
+              {
+                "$ref": "#/$defs/Presence"
+              },
+              {
+                "$ref": "#/$defs/BooleanGroup"
+              }
+            ]
+          },
+          "minItems": 2,
+          "title": "Terms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "terms"
+      ],
+      "title": "BooleanGroup",
+      "type": "object"
+    },
+    "CategoryField": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "category",
+          "title": "Kind",
+          "type": "string"
+        },
+        "choices": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Choices",
+          "type": "array"
+        },
+        "nullable": {
+          "default": false,
+          "title": "Nullable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "choices"
+      ],
+      "title": "CategoryField",
+      "type": "object"
+    },
+    "Comparison": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "comparison",
+          "default": "comparison",
+          "title": "Kind",
+          "type": "string"
+        },
+        "field": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Field",
+          "type": "string"
+        },
+        "op": {
+          "enum": [
+            "==",
+            "<",
+            "<=",
+            ">",
+            ">="
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Duration"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "field",
+        "op",
+        "value"
+      ],
+      "title": "Comparison",
+      "type": "object"
+    },
+    "Decision": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source_rules": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+            "type": "string"
+          },
+          "title": "Source Rules",
+          "type": "array"
+        },
+        "kind": {
+          "const": "decision",
+          "title": "Kind",
+          "type": "string"
+        },
+        "when": {
+          "discriminator": {
+            "mapping": {
+              "all": "#/$defs/BooleanGroup",
+              "any": "#/$defs/BooleanGroup",
+              "comparison": "#/$defs/Comparison",
+              "presence": "#/$defs/Presence"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Comparison"
+            },
+            {
+              "$ref": "#/$defs/Presence"
+            },
+            {
+              "$ref": "#/$defs/BooleanGroup"
+            }
+          ],
+          "title": "When"
+        },
+        "if_true": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "If True"
+        },
+        "if_false": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "If False"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Artifact"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "when"
+      ],
+      "title": "Decision",
+      "type": "object"
+    },
+    "Duration": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "minimum": 0,
+          "title": "Amount",
+          "type": "integer"
+        },
+        "unit": {
+          "enum": [
+            "sec",
+            "min"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount",
+        "unit"
+      ],
+      "title": "Duration",
+      "type": "object"
+    },
+    "DurationField": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "duration",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "DurationField",
+      "type": "object"
+    },
+    "Presence": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "presence",
+          "default": "presence",
+          "title": "Kind",
+          "type": "string"
+        },
+        "field": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Field",
+          "type": "string"
+        },
+        "present": {
+          "title": "Present",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field",
+        "present"
+      ],
+      "title": "Presence",
+      "type": "object"
+    },
+    "Requirements": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "text"
+      ],
+      "title": "Requirements",
+      "type": "object"
+    },
+    "Route": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source_rules": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+            "type": "string"
+          },
+          "title": "Source Rules",
+          "type": "array"
+        },
+        "kind": {
+          "const": "route",
+          "title": "Kind",
+          "type": "string"
+        },
+        "route": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Route",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "route"
+      ],
+      "title": "Route",
+      "type": "object"
+    },
+    "Snippet": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "source"
+      ],
+      "title": "Snippet",
+      "type": "object"
+    },
+    "SpecRule": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "all": "#/$defs/BooleanGroup",
+                  "any": "#/$defs/BooleanGroup",
+                  "comparison": "#/$defs/Comparison",
+                  "presence": "#/$defs/Presence"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Comparison"
+                },
+                {
+                  "$ref": "#/$defs/Presence"
+                },
+                {
+                  "$ref": "#/$defs/BooleanGroup"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "When"
+        },
+        "route": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Route",
+          "type": "string"
+        },
+        "order": {
+          "minimum": 1,
+          "title": "Order",
+          "type": "integer"
+        },
+        "source_rules": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+            "type": "string"
+          },
+          "title": "Source Rules",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "when",
+        "route",
+        "order"
+      ],
+      "title": "SpecRule",
+      "type": "object"
+    },
+    "Specification": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/SpecRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "rules"
+      ],
+      "title": "Specification",
+      "type": "object"
+    },
+    "TicketSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "minProperties": 1,
+          "patternProperties": {
+            "^[A-Za-z_][A-Za-z_0-9]*$": {
+              "discriminator": {
+                "mapping": {
+                  "boolean": "#/$defs/BooleanField",
+                  "category": "#/$defs/CategoryField",
+                  "duration": "#/$defs/DurationField"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/DurationField"
+                },
+                {
+                  "$ref": "#/$defs/BooleanField"
+                },
+                {
+                  "$ref": "#/$defs/CategoryField"
+                }
+              ]
+            }
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "routes": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Routes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "fields",
+        "routes"
+      ],
+      "title": "TicketSchema",
+      "type": "object"
+    },
+    "Workflow": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "entry": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Entry",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "decision": "#/$defs/Decision",
+                "route": "#/$defs/Route"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Decision"
+              },
+              {
+                "$ref": "#/$defs/Route"
+              }
+            ]
+          },
+          "title": "Nodes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "entry",
+        "nodes"
+      ],
+      "title": "Workflow",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "ticket": {
+      "$ref": "#/$defs/TicketSchema"
+    },
+    "requirements": {
+      "$ref": "#/$defs/Requirements"
+    },
+    "spec": {
+      "$ref": "#/$defs/Specification"
+    },
+    "workflow": {
+      "$ref": "#/$defs/Workflow"
+    },
+    "snippets": {
+      "items": {
+        "$ref": "#/$defs/Snippet"
+      },
+      "title": "Snippets",
+      "type": "array"
+    },
+    "approvals": {
+      "$ref": "#/$defs/ApprovalLog"
+    }
+  },
+  "required": [
+    "id",
+    "ticket",
+    "requirements",
+    "spec",
+    "workflow",
+    "snippets",
+    "approvals"
+  ],
+  "title": "Bundle",
+  "type": "object"
+}

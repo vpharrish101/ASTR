@@ -1,0 +1,25 @@
+start: NAME ":" "when" expression "->" NAME -> conditional
+     | NAME ":" "otherwise" "->" NAME      -> fallback
+
+?expression: conjunction ("or" conjunction)+ -> any_of
+           | conjunction
+?conjunction: atom ("and" atom)+ -> all_of
+            | atom
+?atom: NAME "is" "missing" -> missing
+     | NAME "is" "present" -> present
+     | NAME OP value      -> compare
+     | "(" expression ")"
+
+?value: INT UNIT       -> duration
+      | ESCAPED_STRING -> category
+      | "true"         -> true_value
+      | "false"        -> false_value
+
+OP: "==" | ">=" | "<=" | ">" | "<"
+UNIT: "sec" | "min"
+
+%import common.CNAME -> NAME
+%import common.INT
+%import common.ESCAPED_STRING
+%import common.WS_INLINE
+%ignore WS_INLINE

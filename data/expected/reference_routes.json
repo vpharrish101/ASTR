@@ -1,0 +1,13 @@
+[
+  {"category": null, "fraud": false, "urgent": true, "tier": "standard", "waiting": 2400, "rule": "R1", "route": "manual_review"},
+  {"category": "technical", "fraud": true, "urgent": true, "tier": "enterprise", "waiting": 2400, "rule": "R2", "route": "manual_review"},
+  {"category": "billing", "fraud": false, "urgent": true, "tier": "enterprise", "waiting": 2400, "rule": "R3", "route": "priority_queue"},
+  {"category": "billing", "fraud": false, "urgent": false, "tier": "enterprise", "waiting": 2400, "rule": "R4", "route": "enterprise_queue"},
+  {"category": "technical", "fraud": false, "urgent": false, "tier": "enterprise", "waiting": 0, "rule": "R4", "route": "enterprise_queue"},
+  {"category": "general", "fraud": false, "urgent": false, "tier": "enterprise", "waiting": 1800, "rule": "R5", "route": "escalation"},
+  {"category": "billing", "fraud": false, "urgent": false, "tier": "standard", "waiting": 1799, "rule": "R6", "route": "normal_queue"},
+  {"category": "billing", "fraud": false, "urgent": false, "tier": "standard", "waiting": 1800, "rule": "R5", "route": "escalation"},
+  {"category": "billing", "fraud": false, "urgent": false, "tier": "standard", "waiting": 1801, "rule": "R5", "route": "escalation"},
+  {"category": "billing", "fraud": false, "urgent": false, "tier": "standard", "waiting": 1500, "rule": "R6", "route": "normal_queue", "v2_rule": "R5", "v2_route": "escalation"},
+  {"category": "billing", "fraud": false, "urgent": false, "tier": "standard", "waiting": 1499, "rule": "R6", "route": "normal_queue", "v2_rule": "R6", "v2_route": "normal_queue"}
+]

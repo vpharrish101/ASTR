@@ -1,0 +1,318 @@
+{
+  "id": "d11_wrong_true_edge",
+  "ticket": {
+    "fields": {
+      "category": {
+        "kind": "category",
+        "choices": [
+          "billing",
+          "technical",
+          "general"
+        ],
+        "nullable": true
+      },
+      "fraud": {
+        "kind": "boolean"
+      },
+      "urgent": {
+        "kind": "boolean"
+      },
+      "tier": {
+        "kind": "category",
+        "choices": [
+          "standard",
+          "enterprise"
+        ]
+      },
+      "waiting": {
+        "kind": "duration"
+      }
+    },
+    "routes": [
+      "manual_review",
+      "priority_queue",
+      "enterprise_queue",
+      "escalation",
+      "normal_queue"
+    ]
+  },
+  "requirements": {
+    "id": "support_policy",
+    "version": "v1",
+    "text": "R1: when category is missing -> manual_review\nR2: when fraud == true -> manual_review\nR3: when urgent == true -> priority_queue\nR4: when tier == \"enterprise\" and (category == \"billing\" or category == \"technical\") -> enterprise_queue\nR5: when waiting >= 30 min -> escalation\nR6: otherwise -> normal_queue\n"
+  },
+  "spec": {
+    "id": "support_spec",
+    "version": "v1",
+    "rules": [
+      {
+        "id": "s1",
+        "order": 1,
+        "source_rules": [
+          "R1"
+        ],
+        "when": {
+          "kind": "presence",
+          "field": "category",
+          "present": false
+        },
+        "route": "manual_review"
+      },
+      {
+        "id": "s2",
+        "order": 2,
+        "source_rules": [
+          "R2"
+        ],
+        "when": {
+          "kind": "comparison",
+          "field": "fraud",
+          "op": "==",
+          "value": true
+        },
+        "route": "manual_review"
+      },
+      {
+        "id": "s3",
+        "order": 3,
+        "source_rules": [
+          "R3"
+        ],
+        "when": {
+          "kind": "comparison",
+          "field": "urgent",
+          "op": "==",
+          "value": true
+        },
+        "route": "priority_queue"
+      },
+      {
+        "id": "s4",
+        "order": 4,
+        "source_rules": [
+          "R4"
+        ],
+        "when": {
+          "kind": "all",
+          "terms": [
+            {
+              "kind": "comparison",
+              "field": "tier",
+              "op": "==",
+              "value": "enterprise"
+            },
+            {
+              "kind": "any",
+              "terms": [
+                {
+                  "kind": "comparison",
+                  "field": "category",
+                  "op": "==",
+                  "value": "billing"
+                },
+                {
+                  "kind": "comparison",
+                  "field": "category",
+                  "op": "==",
+                  "value": "technical"
+                }
+              ]
+            }
+          ]
+        },
+        "route": "enterprise_queue"
+      },
+      {
+        "id": "s5",
+        "order": 5,
+        "source_rules": [
+          "R5"
+        ],
+        "when": {
+          "kind": "comparison",
+          "field": "waiting",
+          "op": ">=",
+          "value": {
+            "amount": 30,
+            "unit": "min"
+          }
+        },
+        "route": "escalation"
+      },
+      {
+        "id": "s6",
+        "order": 6,
+        "source_rules": [
+          "R6"
+        ],
+        "when": null,
+        "route": "normal_queue"
+      }
+    ]
+  },
+  "workflow": {
+    "id": "support_workflow",
+    "version": "v1",
+    "entry": "n1",
+    "nodes": [
+      {
+        "id": "n1",
+        "kind": "decision",
+        "source_rules": [
+          "R1"
+        ],
+        "when": {
+          "kind": "presence",
+          "field": "category",
+          "present": false
+        },
+        "if_true": "manual",
+        "if_false": "n2"
+      },
+      {
+        "id": "n2",
+        "kind": "decision",
+        "source_rules": [
+          "R2"
+        ],
+        "when": {
+          "kind": "comparison",
+          "field": "fraud",
+          "op": "==",
+          "value": true
+        },
+        "if_true": "manual",
+        "if_false": "n3"
+      },
+      {
+        "id": "n3",
+        "kind": "decision",
+        "source_rules": [
+          "R3"
+        ],
+        "when": {
+          "kind": "comparison",
+          "field": "urgent",
+          "op": "==",
+          "value": true
+        },
+        "if_true": "priority",
+        "if_false": "n4"
+      },
+      {
+        "id": "n4",
+        "kind": "decision",
+        "source_rules": [
+          "R4"
+        ],
+        "when": {
+          "kind": "all",
+          "terms": [
+            {
+              "kind": "comparison",
+              "field": "tier",
+              "op": "==",
+              "value": "enterprise"
+            },
+            {
+              "kind": "any",
+              "terms": [
+                {
+                  "kind": "comparison",
+                  "field": "category",
+                  "op": "==",
+                  "value": "billing"
+                },
+                {
+                  "kind": "comparison",
+                  "field": "category",
+                  "op": "==",
+                  "value": "technical"
+                }
+              ]
+            }
+          ]
+        },
+        "if_true": "enterprise",
+        "if_false": "n5"
+      },
+      {
+        "id": "n5",
+        "kind": "decision",
+        "source_rules": [
+          "R5"
+        ],
+        "when": {
+          "kind": "comparison",
+          "field": "waiting",
+          "op": ">=",
+          "value": {
+            "amount": 30,
+            "unit": "min"
+          }
+        },
+        "if_true": "normal",
+        "if_false": "normal",
+        "code": {
+          "id": "wait_check",
+          "version": "v1"
+        }
+      },
+      {
+        "id": "manual",
+        "kind": "route",
+        "route": "manual_review"
+      },
+      {
+        "id": "priority",
+        "kind": "route",
+        "route": "priority_queue"
+      },
+      {
+        "id": "enterprise",
+        "kind": "route",
+        "route": "enterprise_queue"
+      },
+      {
+        "id": "escalate",
+        "kind": "route",
+        "route": "escalation"
+      },
+      {
+        "id": "normal",
+        "kind": "route",
+        "source_rules": [
+          "R6"
+        ],
+        "route": "normal_queue"
+      }
+    ]
+  },
+  "snippets": [
+    {
+      "id": "wait_check",
+      "version": "v1",
+      "source": "def decide(ticket):\n    return ticket[\"waiting\"] >= 1800\n"
+    }
+  ],
+  "approvals": {
+    "id": "approval_log",
+    "version": "v1",
+    "records": [
+      {
+        "id": "approve_25_next",
+        "decision": "approved",
+        "target_revision": "v2",
+        "target_rule": "R5",
+        "replacement": "R5: when waiting >= 25 min -> escalation"
+      },
+      {
+        "id": "propose_20",
+        "decision": "proposed",
+        "target_revision": "v1",
+        "target_rule": "R5",
+        "replacement": "R5: when waiting >= 20 min -> escalation"
+      }
+    ]
+  }
+}

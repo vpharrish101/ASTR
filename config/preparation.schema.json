@@ -1,0 +1,378 @@
+{
+  "$defs": {
+    "BooleanGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "all",
+            "any"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "all": "#/$defs/BooleanGroup",
+                "any": "#/$defs/BooleanGroup",
+                "comparison": "#/$defs/Comparison",
+                "presence": "#/$defs/Presence"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Comparison"
+              },
+              {
+                "$ref": "#/$defs/Presence"
+              },
+              {
+                "$ref": "#/$defs/BooleanGroup"
+              }
+            ]
+          },
+          "minItems": 2,
+          "title": "Terms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "terms"
+      ],
+      "title": "BooleanGroup",
+      "type": "object"
+    },
+    "Comparison": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "comparison",
+          "default": "comparison",
+          "title": "Kind",
+          "type": "string"
+        },
+        "field": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Field",
+          "type": "string"
+        },
+        "op": {
+          "enum": [
+            "==",
+            "<",
+            "<=",
+            ">",
+            ">="
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Duration"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "field",
+        "op",
+        "value"
+      ],
+      "title": "Comparison",
+      "type": "object"
+    },
+    "Duration": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "minimum": 0,
+          "title": "Amount",
+          "type": "integer"
+        },
+        "unit": {
+          "enum": [
+            "sec",
+            "min"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount",
+        "unit"
+      ],
+      "title": "Duration",
+      "type": "object"
+    },
+    "EffectiveRule": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "all": "#/$defs/BooleanGroup",
+                  "any": "#/$defs/BooleanGroup",
+                  "comparison": "#/$defs/Comparison",
+                  "presence": "#/$defs/Presence"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Comparison"
+                },
+                {
+                  "$ref": "#/$defs/Presence"
+                },
+                {
+                  "$ref": "#/$defs/BooleanGroup"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "When"
+        },
+        "route": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Route",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "approval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Evidence"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "when",
+        "route",
+        "source"
+      ],
+      "title": "EffectiveRule",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Artifact",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "location"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Issue": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "evidence"
+      ],
+      "title": "Issue",
+      "type": "object"
+    },
+    "ParsedSnippet": {
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "discriminator": {
+            "mapping": {
+              "all": "#/$defs/BooleanGroup",
+              "any": "#/$defs/BooleanGroup",
+              "comparison": "#/$defs/Comparison",
+              "presence": "#/$defs/Presence"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Comparison"
+            },
+            {
+              "$ref": "#/$defs/Presence"
+            },
+            {
+              "$ref": "#/$defs/BooleanGroup"
+            }
+          ],
+          "title": "Condition"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        }
+      },
+      "required": [
+        "condition",
+        "evidence"
+      ],
+      "title": "ParsedSnippet",
+      "type": "object"
+    },
+    "Presence": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "presence",
+          "default": "presence",
+          "title": "Kind",
+          "type": "string"
+        },
+        "field": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Field",
+          "type": "string"
+        },
+        "present": {
+          "title": "Present",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "field",
+        "present"
+      ],
+      "title": "Presence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "bundle": {
+      "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+      "title": "Bundle",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "READY",
+        "UNRESOLVED"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "source_revision": {
+      "minLength": 1,
+      "title": "Source Revision",
+      "type": "string"
+    },
+    "effective_rules": {
+      "items": {
+        "$ref": "#/$defs/EffectiveRule"
+      },
+      "title": "Effective Rules",
+      "type": "array"
+    },
+    "snippets": {
+      "items": {
+        "$ref": "#/$defs/ParsedSnippet"
+      },
+      "title": "Snippets",
+      "type": "array"
+    },
+    "issues": {
+      "items": {
+        "$ref": "#/$defs/Issue"
+      },
+      "title": "Issues",
+      "type": "array"
+    }
+  },
+  "required": [
+    "bundle",
+    "status",
+    "source_revision",
+    "effective_rules",
+    "snippets",
+    "issues"
+  ],
+  "title": "Preparation",
+  "type": "object"
+}

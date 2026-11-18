@@ -1,0 +1,21 @@
+{
+  "attempt_limit": 2,
+  "cases": {
+    "d22_model_timeout": [
+      {"event": "timeout"},
+      {"event": "timeout"}
+    ],
+    "d23_model_invalid_json": [
+      {"event": "raw_response", "body": "not JSON"},
+      {"event": "raw_response", "body": "{\"findings\":["}
+    ],
+    "d24_model_invented_citation": [
+      {"event": "invented_citation", "rule": "R99", "artifact": "ghost_policy", "version": "v8", "location": "line 99:1"},
+      {"event": "invented_citation", "rule": "R99", "artifact": "ghost_policy", "version": "v8", "location": "line 99:1"}
+    ],
+    "r08_model_conflicting_claim": [
+      {"event": "contradictory_claim", "rule": "R5", "claim": "Waiting exactly 1800 seconds routes a standard non-urgent billing ticket to normal_queue."},
+      {"event": "contradictory_claim", "rule": "R5", "claim": "Waiting exactly 1800 seconds routes a standard non-urgent billing ticket to normal_queue."}
+    ]
+  }
+}
