@@ -5,10 +5,10 @@ from collections import defaultdict
 from graphlib import CycleError, TopologicalSorter
 
 from ..utils.contracts import (
-    BooleanGroup, Bundle, Comparison, Condition, Decision, Duration, Evidence, Issue,
-    ParsedSnippet, Presence,
+    BooleanGroup, Bundle, Comparison, Condition, Decision, Duration, Issue,
+    ParsedSnippet, Preparation, Presence,
 )
-from .policy import condition_error, rule_error
+from .policy import condition_error, resolve_policy, rule_error
 
 OPERATORS = {ast.Eq: "==", ast.Lt: "<", ast.LtE: "<=", ast.Gt: ">", ast.GtE: ">="}
 
@@ -50,85 +50,68 @@ def predicate_expression(source: str) -> ast.expr:
 def inspect_artifacts(bundle: Bundle, source_ids: set[str]) -> tuple[list[ParsedSnippet], list[Issue]]:
     issues: list[Issue] = []
     spec, graph = bundle.spec, bundle.workflow
-    spec_orders = {rule.order for rule in spec.rules}
-    if len(spec_orders) != len(spec.rules):
-        issues.append(Issue(
-            code="ambiguous_spec_order", message="Specification rule order values must be unique",
-            evidence=Evidence(artifact=spec.id, version=spec.version, location="/rules"),
-        ))
+    if len({rule.order for rule in spec.rules}) != len(spec.rules):
+        issues.append(spec.issue("ambiguous_spec_order", "Specification rule order values must be unique", "/rules"))
 
-    nodes = {node.id: node for node in graph.nodes}
-    if graph.entry not in nodes:
-        issues.append(Issue(
-            code="unknown_entry", message=f"Missing workflow entry node {graph.entry!r}",
-            evidence=Evidence(artifact=graph.id, version=graph.version, location="/entry"),
-        ))
-    edges = {}
+    dependencies = graph.dependencies()
+    if graph.entry not in dependencies:
+        issues.append(graph.issue("unknown_entry", f"Missing workflow entry node {graph.entry!r}", "/entry"))
     snippet_keys = {(snippet.id, snippet.version) for snippet in bundle.snippets}
     code_rules = defaultdict(set)
 
     for artifact, entries, collection in [(spec, spec.rules, "rules"), (graph, graph.nodes, "nodes")]:
         for index, entry in enumerate(entries):
-            evidence = Evidence(
-                artifact=artifact.id, version=artifact.version, location=f"/{collection}/{index}",
-            )
-            for ref in sorted(set(entry.source_rules) - source_ids):
-                issues.append(Issue(
-                    code="unknown_source_rule", message=f"No anchored source rule {ref!r}",
-                    evidence=evidence, rule=ref,
-                ))
+            loc = f"/{collection}/{index}"
+            issues.extend(artifact.issue("unknown_source_rule", f"No anchored source rule {ref!r}", loc, rule=ref)
+                          for ref in sorted(set(entry.source_rules) - source_ids))
             if isinstance(entry, Decision):
                 error = condition_error(entry.when, bundle.ticket)
-                edges[entry.id] = [
-                    target for target in (entry.if_true, entry.if_false) if target in nodes
-                ]
                 if entry.code is not None:
                     key = (entry.code.id, entry.code.version)
                     code_rules[key].update(entry.source_rules)
                     if key not in snippet_keys:
-                        issues.append(Issue(
-                            code="missing_snippet", message=f"Missing snippet {entry.code.id}@{entry.code.version}",
-                            evidence=evidence.model_copy(update={"location": evidence.location + "/code"}),
+                        issues.append(artifact.issue(
+                            "missing_snippet", f"Missing snippet {entry.code.id}@{entry.code.version}", loc + "/code",
                             rule=entry.source_rules[0] if len(entry.source_rules) == 1 else None,
                         ))
-            elif artifact is spec:
-                error = rule_error(entry, bundle.ticket)
             else:
-                error = None if entry.route in bundle.ticket.routes else f"Unknown route {entry.route!r}"
+                error = rule_error(entry, bundle.ticket)
             if error is not None:
-                issues.append(Issue(code="unsupported_artifact", message=error, evidence=evidence))
+                issues.append(artifact.issue("unsupported_artifact", error, loc))
 
     try:
-        tuple(TopologicalSorter(edges).static_order())
+        TopologicalSorter(dependencies).prepare()
     except CycleError:
-        issues.append(Issue(
-            code="workflow_cycle", message="The supported workflow graph must be acyclic",
-            evidence=Evidence(artifact=graph.id, version=graph.version, location="/nodes"),
-        ))
+        issues.append(graph.issue("workflow_cycle", "The supported workflow graph must be acyclic", "/nodes"))
 
     parsed: list[ParsedSnippet] = []
     for snippet in bundle.snippets:
-        evidence = Evidence(
-            artifact=snippet.id, version=snippet.version, location="line 1:1", text=snippet.source,
-        )
+        evidence = snippet.anchor("line 1:1", snippet.source)
         refs = code_rules[(snippet.id, snippet.version)]
         rule = next(iter(refs)) if len(refs) == 1 else None
         try:
             expression = predicate_expression(snippet.source)
-            evidence.location = f"line {expression.lineno}:{expression.col_offset + 1}"
-            evidence.text = ast.get_source_segment(snippet.source, expression)
+            evidence = snippet.anchor(f"line {expression.lineno}:{expression.col_offset + 1}",
+                                      ast.get_source_segment(snippet.source, expression))
             condition = python_condition(expression)
+            if error := condition_error(condition, bundle.ticket):
+                raise ValueError(error)
         except SyntaxError as exc:
-            evidence.location = f"line {exc.lineno or 1}:{exc.offset or 1}"
-            evidence.text = exc.text
+            evidence = snippet.anchor(f"line {exc.lineno or 1}:{exc.offset or 1}", exc.text)
             issues.append(Issue(code="python_syntax", message=exc.msg, evidence=evidence, rule=rule))
         except ValueError as exc:
-            issues.append(Issue(
-                code="unsupported_python", message=str(exc), evidence=evidence, rule=rule,
-            ))
+            issues.append(Issue(code="unsupported_python", message=str(exc), evidence=evidence, rule=rule))
         else:
-            if error := condition_error(condition, bundle.ticket):
-                issues.append(Issue(code="unsupported_python", message=error, evidence=evidence, rule=rule))
-            else:
-                parsed.append(ParsedSnippet(condition=condition, evidence=evidence))
+            parsed.append(ParsedSnippet(condition=condition, evidence=evidence))
     return parsed, issues
+
+
+def prepare(bundle: Bundle) -> Preparation:
+    rules, source_ids, issues = resolve_policy(bundle)
+    snippets, artifact_issues = inspect_artifacts(bundle, source_ids)
+    issues.extend(artifact_issues)
+    return Preparation(
+        bundle=bundle.id, status="UNRESOLVED" if issues else "READY",
+        source_revision=bundle.requirements.version, effective_rules=rules,
+        snippets=snippets, issues=issues,
+    )

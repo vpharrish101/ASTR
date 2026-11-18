@@ -18,6 +18,12 @@ class Artifact(Contract):
     id: Identifier
     version: Version
 
+    def anchor(self, location: str, text: str | None = None) -> "Evidence":
+        return Evidence(artifact=self.id, version=self.version, location=location, text=text)
+
+    def issue(self, code: str, message: str, location: str, *, text=None, rule=None) -> "Issue":
+        return Issue(code=code, message=message, rule=rule, evidence=self.anchor(location, text))
+
 
 class Evidence(Contract):
     artifact: Identifier
@@ -125,6 +131,14 @@ class Route(Node):
 class Workflow(Artifact):
     entry: Identifier
     nodes: list[Annotated[Decision | Route, Field(discriminator="kind")]]
+
+    def dependencies(self) -> dict[str, list[str]]:
+        ids = {node.id for node in self.nodes}
+        return {
+            node.id: [edge for edge in (node.if_true, node.if_false) if edge in ids]
+            if isinstance(node, Decision) else []
+            for node in self.nodes
+        }
 
 
 class Snippet(Artifact):

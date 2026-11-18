@@ -1,0 +1,359 @@
+{
+  "$defs": {
+    "Check": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "title": "Artifact",
+          "type": "string"
+        },
+        "result": {
+          "enum": [
+            "equivalent",
+            "different",
+            "unresolved",
+            "not_applicable"
+          ],
+          "title": "Result",
+          "type": "string"
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "artifact",
+        "result"
+      ],
+      "title": "Check",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+          "title": "Artifact",
+          "type": "string"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "location"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "blocker",
+            "info"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "correction": {
+          "title": "Correction",
+          "type": "string"
+        },
+        "witness": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Witness"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "evidence",
+        "message",
+        "correction"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "Issue": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z_][A-Za-z_0-9]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "evidence"
+      ],
+      "title": "Issue",
+      "type": "object"
+    },
+    "Witness": {
+      "additionalProperties": false,
+      "properties": {
+        "ticket": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Ticket",
+          "type": "object"
+        },
+        "expected_route": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expected Route"
+        },
+        "actual_route": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Actual Route"
+        },
+        "expected_path": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Expected Path",
+          "type": "array"
+        },
+        "actual_path": {
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "title": "Actual Path",
+          "type": "array"
+        },
+        "expected_branch": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Branch"
+        },
+        "actual_branch": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual Branch"
+        }
+      },
+      "required": [
+        "ticket",
+        "expected_route",
+        "actual_route",
+        "expected_path",
+        "actual_path"
+      ],
+      "title": "Witness",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "bundle": {
+      "title": "Bundle",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "CHANGES_REQUIRED",
+        "INCOMPLETE"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "method": {
+      "const": "exact",
+      "default": "exact",
+      "title": "Method",
+      "type": "string"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "coverage": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "enum": [
+            "equivalent",
+            "different",
+            "unresolved",
+            "not_applicable"
+          ],
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "title": "Coverage",
+      "type": "object"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/Check"
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "preparation_issues": {
+      "items": {
+        "$ref": "#/$defs/Issue"
+      },
+      "title": "Preparation Issues",
+      "type": "array"
+    }
+  },
+  "required": [
+    "bundle",
+    "status",
+    "summary",
+    "findings",
+    "coverage",
+    "checks",
+    "preparation_issues"
+  ],
+  "title": "Review",
+  "type": "object"
+}

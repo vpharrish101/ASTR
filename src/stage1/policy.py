@@ -11,7 +11,7 @@ from lark.exceptions import VisitError
 
 from ..utils.contracts import (
     BooleanField, BooleanGroup, Bundle, CategoryField, Comparison, Condition, Duration,
-    DurationField, EffectiveRule, Evidence, Issue, Presence, Rule, TicketSchema,
+    DurationField, EffectiveRule, Issue, Presence, Route, Rule, TicketSchema,
 )
 
 GRAMMAR = Path(__file__).resolve().parents[2] / "config" / "requirements.lark"
@@ -21,11 +21,15 @@ RULE_PREFIX = re.compile(r"^\s*([A-Za-z_][A-Za-z_0-9]*)\s*:")
 
 @v_args(inline=True)
 class RuleTransformer(Transformer):
-    def conditional(self, key, condition, route):
-        return Rule(id=str(key), when=condition, route=str(route))
+    NAME = OP = UNIT = str
+    INT = int
+    ESCAPED_STRING = BOOL = staticmethod(json.loads)
 
-    def fallback(self, key, route):
-        return Rule(id=str(key), when=None, route=str(route))
+    def start(self, key, condition, route):
+        return Rule(id=key, when=condition, route=route)
+
+    def otherwise(self):
+        return None
 
     def any_of(self, *terms):
         return BooleanGroup(kind="any", terms=list(terms))
@@ -34,25 +38,13 @@ class RuleTransformer(Transformer):
         return BooleanGroup(kind="all", terms=list(terms))
 
     def compare(self, field, op, value):
-        return Comparison(field=str(field), op=str(op), value=value)
+        return Comparison(field=field, op=op, value=value)
 
-    def missing(self, field):
-        return Presence(field=str(field), present=False)
-
-    def present(self, field):
-        return Presence(field=str(field), present=True)
+    def presence(self, field, value):
+        return Presence(field=field, present=value == "present")
 
     def duration(self, amount, unit):
-        return Duration(amount=int(amount), unit=str(unit))
-
-    def category(self, value):
-        return json.loads(value)
-
-    def true_value(self):
-        return True
-
-    def false_value(self):
-        return False
+        return Duration(amount=amount, unit=unit)
 
 
 def parse_rule(text: str) -> Rule:
@@ -83,10 +75,10 @@ def condition_error(condition: Condition, ticket: TicketSchema) -> str | None:
     return f"Value is incompatible with ticket field {condition.field!r}"
 
 
-def rule_error(rule: Rule, ticket: TicketSchema) -> str | None:
+def rule_error(rule: Rule | Route, ticket: TicketSchema) -> str | None:
     if rule.route not in ticket.routes:
         return f"Unknown route {rule.route!r}"
-    if rule.when is not None:
+    if isinstance(rule, Rule) and rule.when is not None:
         return condition_error(rule.when, ticket)
     return None
 
@@ -101,10 +93,7 @@ def resolve_policy(bundle: Bundle) -> tuple[list[EffectiveRule], set[str], list[
     for number, text in entries:
         prefix = RULE_PREFIX.match(text)
         rule_id = prefix[1] if prefix else None
-        evidence = Evidence(
-            artifact=source.id, version=source.version,
-            location=f"line {number}:{len(text) - len(text.lstrip()) + 1}", text=text,
-        )
+        evidence = source.anchor(f"line {number}:{len(text) - len(text.lstrip()) + 1}", text)
         error_code = "unsupported_source"
         try:
             rule = parse_rule(text)
@@ -128,7 +117,6 @@ def resolve_policy(bundle: Bundle) -> tuple[list[EffectiveRule], set[str], list[
         if record.decision == "approved" and record.target_revision == source.version:
             active[record.target_rule][record.id] = record
 
-    unresolved = set()
     for target, records in active.items():
         links = {key: set(record.supersedes) for key, record in records.items()}
         replaced = set().union(*links.values())
@@ -141,7 +129,7 @@ def resolve_policy(bundle: Bundle) -> tuple[list[EffectiveRule], set[str], list[
             error = "Supersession must link to an applicable approved record for the same rule"
         else:
             try:
-                tuple(TopologicalSorter(links).static_order())
+                TopologicalSorter(links).prepare()
             except CycleError:
                 error = "Approval supersession contains a cycle"
             if error is None and len(winners) != 1:
@@ -162,29 +150,17 @@ def resolve_policy(bundle: Bundle) -> tuple[list[EffectiveRule], set[str], list[
                     error = "Replacement must preserve whether the rule is the fallback"
 
         if error is not None:
-            unresolved.add(target)
-            for key, record in records.items():
-                issues.append(Issue(
-                    code=error_code, message=error, rule=target,
-                    evidence=Evidence(
-                        artifact=log.id, version=log.version, location=f"record {key}",
-                        text=record.replacement,
-                    ),
-                ))
+            originals.pop(target, None)
+            issues.extend(log.issue(error_code, error, f"record {record.id}", text=record.replacement, rule=target)
+                          for record in records.values())
         else:
             originals[target] = EffectiveRule(
                 **replacement.model_dump(), source=originals[target].source,
-                approval=Evidence(
-                    artifact=log.id, version=log.version,
-                    location=f"record {winner.id}", text=winner.replacement,
-                ),
+                approval=log.anchor(f"record {winner.id}", winner.replacement),
             )
 
-    effective = [rule for key, rule in originals.items() if key not in unresolved]
+    effective = list(originals.values())
     fallbacks = [rule for rule in effective if rule.when is None]
     if len(fallbacks) != 1 or fallbacks[0] is not effective[-1]:
-        issues.append(Issue(
-            code="invalid_fallback", message="The effective policy needs one final otherwise rule",
-            evidence=Evidence(artifact=source.id, version=source.version, location="policy"),
-        ))
+        issues.append(source.issue("invalid_fallback", "The effective policy needs one final otherwise rule", "policy"))
     return effective, set(ids), issues

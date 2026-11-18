@@ -6,20 +6,8 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from .stage1.policy import resolve_policy
-from .stage1.workflow import inspect_artifacts
+from .stage1.workflow import prepare
 from .utils.contracts import Bundle, Preparation
-
-
-def prepare(bundle: Bundle) -> Preparation:
-    rules, source_ids, issues = resolve_policy(bundle)
-    snippets, artifact_issues = inspect_artifacts(bundle, source_ids)
-    issues.extend(artifact_issues)
-    return Preparation(
-        bundle=bundle.id, status="UNRESOLVED" if issues else "READY",
-        source_revision=bundle.requirements.version, effective_rules=rules,
-        snippets=snippets, issues=issues,
-    )
 
 
 def unique_json_object(pairs):
@@ -32,12 +20,20 @@ def unique_json_object(pairs):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("bundle", type=Path, nargs="?")
-    parser.add_argument("--schema", choices=["bundle", "preparation"])
+    parser.add_argument("--review", action="store_true", help="Run exact Stage 2 semantic review")
+    parser.add_argument("--schema", choices=["bundle", "preparation", "review"])
     args = parser.parse_args()
     if (args.schema is None) == (args.bundle is None):
         parser.error("provide a bundle path or --schema")
+    if args.review and args.bundle is None:
+        parser.error("--review requires a bundle path")
     if args.schema:
-        contract = Bundle if args.schema == "bundle" else Preparation
+        if args.schema == "review":
+            from .stage2.check import Review
+
+            contract = Review
+        else:
+            contract = Bundle if args.schema == "bundle" else Preparation
         print(json.dumps(contract.model_json_schema(), indent=2))
         return 0
     try:
@@ -56,6 +52,12 @@ def main() -> int:
     except ValueError as exc:
         print(json.dumps({"error": "invalid_bundle", "message": str(exc)}))
         return 2
+    if args.review:
+        from .stage2.check import review
+
+        report = review(bundle)
+        print(report.model_dump_json(indent=2))
+        return 0 if report.status == "PASS" else 1
     result = prepare(bundle)
     print(result.model_dump_json(indent=2))
     return 0 if result.status == "READY" else 1

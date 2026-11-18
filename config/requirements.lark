@@ -1,22 +1,24 @@
-start: NAME ":" "when" expression "->" NAME -> conditional
-     | NAME ":" "otherwise" "->" NAME      -> fallback
+start: NAME ":" clause "->" NAME
+
+?clause: "when" expression
+       | "otherwise" -> otherwise
 
 ?expression: conjunction ("or" conjunction)+ -> any_of
            | conjunction
 ?conjunction: atom ("and" atom)+ -> all_of
             | atom
-?atom: NAME "is" "missing" -> missing
-     | NAME "is" "present" -> present
+?atom: NAME "is" PRESENCE -> presence
      | NAME OP value      -> compare
      | "(" expression ")"
 
 ?value: INT UNIT       -> duration
-      | ESCAPED_STRING -> category
-      | "true"         -> true_value
-      | "false"        -> false_value
+      | ESCAPED_STRING
+      | BOOL
 
 OP: "==" | ">=" | "<=" | ">" | "<"
 UNIT: "sec" | "min"
+PRESENCE: "missing" | "present"
+BOOL: "true" | "false"
 
 %import common.CNAME -> NAME
 %import common.INT

@@ -24,3 +24,15 @@ The CLI lives in `src/main.py`, preparation logic in `src/stage1/`, and shared c
 The dataset contains 24 development bundles and 8 reserved bundles. The hand-authored reference lives in `data/development/d01_reference.json`. Labels and hand-worked routes live in `data/expected/`, outside the reviewer. The [freeze manifest](evaluation/freeze.json) records the inputs, labels, generation script, and fake-client scenarios by hash. Stage 1 tests prepare only development bundles. The reserved split is for later frozen scoring.
 
 Run `python -m evaluation.build_cases` from the project root to reproduce the frozen input files from the reference and named edits. Keep the committed freeze manifest as the comparison point when checking for changes. The verification command above checks manifest integrity, the reference oracle, and Stage 1 behavior. The model scenarios are pinned inputs for Stage 3, and the evaluator will score the frozen labels after the behavioral reviewer is implemented.
+
+## Run Stage 2
+
+```sh
+.venv/bin/python -m src.main --review data/development/d01_reference.json
+.venv/bin/python -m src.main --review data/development/d09_exclusive_boundary.json
+.venv/bin/python -m evaluation.checkpoint data/development/d01_reference.json
+```
+
+`--review` runs the deterministic semantic checker and emits a [versioned evidence report](config/review.schema.json). Exit 0 means `PASS`; exit 1 means `CHANGES_REQUIRED` or `INCOMPLETE`. A null actual route indicates a reachable dead end in a routing mismatch. A linked predicate finding can also show distinct branch choices when the final destinations happen to agree.
+
+Z3 compares first-match routing over the declared domain. A counterexample is replayed with the original evidence. Equivalence is scoped to the supported DSL, structured conditions, workflow, and linked Python subset. The checkpoint samples a fixed set of tickets. See [decisions.md](decisions.md) for the method and verification limits.
