@@ -129,7 +129,8 @@ def main():
     parser.add_argument("--split", choices=["development", "all"], default="all")
     parser.add_argument("--freeze", action="store_true", help="Record the final code before any reserved run")
     parser.add_argument("--verify", action="store_true", help="Run Stage 1 and Stage 2 tests before scoring")
-    parser.add_argument("--output", type=Path, default=ROOT / "evaluation/results/offline.json")
+    parser.add_argument("--details", action="store_true", help="Include full per-bundle reports and run metadata")
+    parser.add_argument("--output", type=Path, default=ROOT / "reports/stage4-offline.json")
     args = parser.parse_args()
     implementation = verify_freeze(args.split, args.freeze)
     if args.verify:
@@ -158,13 +159,16 @@ def main():
                     "elapsed": elapsed, **score(bundle, label, report), "report": report,
                 })
     metrics = {split: {mode: summarize(rows) for mode, rows in batch.items()} for split, batch in data.items()}
+    output = {"metrics": metrics}
+    if args.details:
+        output = {
+            "mode": "offline", "python": platform.python_version(), "architecture": platform.machine(),
+            "implementation_sha256": implementation,
+            "expectations": "The four scripted model-failure cases have valid routing and expect PASS in zero-model mode.",
+            "metrics": metrics, "cases": data,
+        }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps({
-        "mode": "offline", "python": platform.python_version(), "architecture": platform.machine(),
-        "implementation_sha256": implementation,
-        "expectations": "The four scripted model-failure cases have valid routing and expect PASS in zero-model mode.",
-        "metrics": metrics, "cases": data,
-    }, indent=2) + "\n")
+    args.output.write_text(json.dumps(output, indent=2) + "\n")
     print(json.dumps(metrics, indent=2))
 
 

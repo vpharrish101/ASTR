@@ -192,8 +192,9 @@ labels in the file. The offline comparison scores their deterministic routing.
 
 - **One bundle:** The boundary example above prints a JSON report. Look for
   `CHANGES_REQUIRED` and the 30-minute ticket under `findings`.
-- **All 32 bundles:** The Stage 4 command writes the per-bundle reports and
-  metrics to `reports/stage4-offline.json`. [Saved offline run](evaluation/results/offline.json)
+- **All 32 bundles:** The Stage 4 command writes summary metrics to
+  `reports/stage4-offline.json`. Add `--details` to include the full per-bundle
+  reports. [Saved offline run with full reports](evaluation/results/offline.json)
 - **Real model results:** The Ollama reports cover the 24 development bundles
   and are saved separately. [Live reports](evaluation/results/live-development.json)
 

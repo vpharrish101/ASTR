@@ -110,3 +110,8 @@ The 44 Stage 1 tests passed before the sampled and exact semantic runs. The froz
 
 - Move the Pydantic reports and evidence models to `contracts.py` and the Z3 domain encoding and search to `solver.py`. Keep comparison orchestration and finding construction in `check.py`, and keep concrete ticket replay in `replay.py`.
 - All 104 tests passed. Both CLI schemas and the 48 development reports matched their pre-refactor versions apart from timing. The active reproduction freeze includes both module splits, and the submitted evaluation reproduced on all 32 bundles.
+
+## Stage 4 summary output
+
+- Write just `metrics` to `reports/stage4-offline.json` by default. `--details` adds the per-bundle reports and run metadata. Keep the original full submission results in `evaluation/results/offline.json`.
+- Record the output change in the reproduction freeze. Both formats reproduced the submitted results on 32 bundles apart from timing, and all 80 offline tests passed. The summary export was 182 lines.
