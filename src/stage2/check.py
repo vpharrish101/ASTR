@@ -210,6 +210,10 @@ def script_finding(graph, node, index, snippet, rule, ticket):
 
 
 def review(bundle, *, timeout_ms=1000):
+    return review_with_preparation(bundle, timeout_ms=timeout_ms)[0]
+
+
+def review_with_preparation(bundle, *, timeout_ms=1000):
     prepared = prepare(bundle)
     domain = Domain(bundle.ticket, timeout_ms)
     expected, spec = rule_tables(bundle, prepared)
@@ -294,5 +298,6 @@ def review(bundle, *, timeout_ms=1000):
                 findings.append(script_finding(graph, node, index, snippet, rule, ticket))
 
     status, summary = verdict(findings, checks.values(), prepared.issues)
-    return Review(bundle=bundle.id, status=status, summary=summary, findings=findings,
+    report = Review(bundle=bundle.id, status=status, summary=summary, findings=findings,
                     coverage=coverage, checks=list(checks.values()), preparation_issues=prepared.issues)
+    return report, prepared

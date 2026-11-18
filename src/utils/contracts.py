@@ -1,5 +1,6 @@
 """Versioned inputs and the output of Stage 1 preparation."""
 
+import json
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -8,6 +9,24 @@ Identifier = Annotated[str, Field(pattern=r"^[A-Za-z_][A-Za-z_0-9]*$")]
 Version = Annotated[str, Field(min_length=1)]
 Nonnegative = Annotated[int, Field(ge=0)]
 Operator = Literal["==", "<", "<=", ">", ">="]
+
+
+def decode_json(data):
+    def unique_keys(pairs):
+        result = dict(pairs)
+        if len(result) != len(pairs):
+            raise ValueError("JSON objects must have unique keys")
+        return result
+
+    return json.loads(data, object_pairs_hook=unique_keys)
+
+
+def read_bounded(path, limit):
+    with path.open("rb") as stream:
+        data = stream.read(limit + 1)
+    if len(data) > limit:
+        raise ValueError(f"Input exceeds {limit} bytes. The input remains unreviewed.")
+    return data
 
 
 class Contract(BaseModel):
