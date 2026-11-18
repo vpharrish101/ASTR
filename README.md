@@ -92,6 +92,8 @@ Expect 21 `READY` and 3 `UNRESOLVED` reports in `reports/stage-1/`.
 
 ## Stage 2: Give all four versions the same ticket
 
+[Stage 2 routing checks](docs/stage2.md)
+
 I built four versions of the routing logic: the effective policy, the spec, the workflow graph, and the workflow with its linked Python predicates. **Z3** checks whether a valid ticket can get different routes under those versions.
 
 The 30-minute case is my favorite. The policy says `>= 30 min`, the spec says `> 30 min`, and a ticket waiting **exactly 30 minutes** settles it. ASTR replays the ticket and reports **expected escalation, actual normal queue**. It cites the rule and spec condition. The same approach catches precedence bugs where each condition looks reasonable on its own.
@@ -116,6 +118,8 @@ done
 Expect 9 `PASS`, 12 `CHANGES_REQUIRED`, and 3 `INCOMPLETE` in `reports/stage-2/`.
 
 ## Stage 3: Give the evidence a second reader
+
+[Stage 3 model review](docs/stage3.md)
 
 Ollama runs Qwen3 locally. When I enable model review, ASTR sends the effective
 rules and findings after the deterministic checks. Qwen can suggest a human
@@ -162,6 +166,8 @@ of 6.54 seconds per call. GPU offload and the Ollama version were unverified.
 [Live reports](evaluation/results/live-development.json)
 
 ## Stage 4: Run the frozen evaluation
+
+[Stage 4 evaluation](docs/stage4.md)
 
 ```sh
 python -m evaluation.run --verify --output reports/stage4-offline.json
