@@ -198,4 +198,4 @@ labels in the file. The offline comparison scores their deterministic routing.
   and are saved separately. [Live reports](evaluation/results/live-development.json)
 
 The [engineering note](docs/engineering-note.pdf) explains the supported scope
-and the two bugs I fixed during development.
+and the two bugs I fixed during development. Please refer to docs/ for detailed documentation and AI usage.
