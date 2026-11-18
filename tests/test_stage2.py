@@ -153,3 +153,20 @@ def test_review_recomputes_proof_when_ticket_domain_widens(reference):
         finding.witness and finding.witness.ticket["category"] is None
         for finding in report.findings
     )
+
+
+def test_ablation_skips_route_proofs_but_keeps_local_checks():
+    from src.stage3.model_review import assisted_review
+
+    cases = [
+        ("d10_urgency_before_missing", "INCOMPLETE", None),
+        ("d12_missing_false_edge", "CHANGES_REQUIRED", "missing_branch"),
+        ("d13_code_disagrees", "CHANGES_REQUIRED", "script_disagreement"),
+    ]
+    for case, status, blocker in cases:
+        bundle = load(DATA / "development" / f"{case}.json")
+        report = assisted_review(bundle, compare_routes=False)
+        assert report.status == status
+        assert all(row["workflow"] == "unresolved" for row in report.coverage.values())
+        assert {f.code for f in report.findings if f.severity == "blocker"} == ({blocker} if blocker else set())
+        assert not report.model_review.attempts

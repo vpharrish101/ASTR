@@ -185,13 +185,16 @@ def routing_finding(layer, ticket, expected, actual, rules, source_refs):
     )
 
 
-def dead_end_finding(ticket, actual):
+def dead_end_finding(ticket, actual, expected=(None, [], [])):
     route, refs, path = actual
+    want, winners, source_path = expected
+    rule = next(iter(winners or refs[-1:]), None)
     return Finding(
-        code="missing_branch", severity="blocker", rule=refs[-1] if refs else None,
-        evidence=path, message="A reachable workflow path ends without a route.",
+        code="missing_branch", severity="blocker", rule=rule,
+        evidence=source_path + path, message="A reachable workflow path ends without a route.",
         correction="Connect the indicated edge or entry to a valid destination.",
-        witness=Witness(ticket=ticket, expected_route=None, actual_route=route, expected_path=[], actual_path=path),
+        witness=Witness(ticket=ticket, expected_route=want, actual_route=route,
+                        expected_path=source_path, actual_path=path),
     )
 
 
@@ -213,7 +216,7 @@ def review(bundle, *, timeout_ms=1000):
     return review_with_preparation(bundle, timeout_ms=timeout_ms)[0]
 
 
-def review_with_preparation(bundle, *, timeout_ms=1000):
+def review_with_preparation(bundle, *, timeout_ms=1000, compare_routes=True):
     prepared = prepare(bundle)
     domain = Domain(bundle.ticket, timeout_ms)
     expected, spec = rule_tables(bundle, prepared)
@@ -234,8 +237,8 @@ def review_with_preparation(bundle, *, timeout_ms=1000):
         issue.code for issue in by_artifact[(bundle.spec.id, bundle.spec.version)])
     graph_ok = not {"unsupported_artifact", "workflow_cycle"}.intersection(
         issue.code for issue in by_artifact[(bundle.workflow.id, bundle.workflow.version)])
-    expected_route, regions = domain.policy(expected) if not source_issues else (None, [])
-    spec_route = domain.policy(spec)[0] if spec_ok else None
+    expected_route, regions = domain.policy(expected) if compare_routes and not source_issues else (None, [])
+    spec_route = domain.policy(spec)[0] if compare_routes and spec_ok else None
     workflow_route, reach = domain.workflow(graph) if graph_ok else (None, {})
     code_route, code_reach = domain.workflow(graph, linked_code=True) if graph_ok and linked else (None, {})
     # Reuse only the workflow checks built for this call's policy and ticket domain.
@@ -246,9 +249,11 @@ def review_with_preparation(bundle, *, timeout_ms=1000):
         ("workflow", workflow_route, graph.replay),
         ("linked_code", code_route, lambda ticket: graph.replay(ticket, linked_code=True)),
     ):
-        if route is None or source_issues:
+        if not compare_routes or route is None or source_issues:
             state = "not_applicable" if layer == "linked_code" and not linked else "unresolved"
             detail = "A supported source and implementation are required." if state == "unresolved" else None
+            if not compare_routes and detail:
+                detail = "Whole-policy route comparison disabled for the ablation."
             checks[layer, None] = Check(artifact=layer, result=state, detail=detail)
             continue
 
@@ -278,11 +283,14 @@ def review_with_preparation(bundle, *, timeout_ms=1000):
         correction=f"Link the corresponding specification logic to {rule.id}.",
     ) for rule in prepared.effective_rules if rule.id not in source_refs and coverage[rule.id]["spec"] != "different")
 
-    if graph_ok and source_issues:
+    if graph_ok and (source_issues or not compare_routes):
         state, ticket, reason = domain.search(workflow_route == NO_ROUTE)
         checks["workflow_branches", None] = Check(artifact="workflow_branches", result=state, detail=reason)
         if ticket is not None:
-            findings.append(dead_end_finding(ticket, graph.replay(ticket)))
+            if source_issues:
+                findings.append(dead_end_finding(ticket, graph.replay(ticket)))
+            else:
+                findings.append(dead_end_finding(ticket, graph.replay(ticket), policy_path(expected, ticket)))
 
     if graph_ok:
         for key, snippet in linked.items():

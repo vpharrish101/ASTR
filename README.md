@@ -21,9 +21,9 @@ The CLI lives in `src/main.py`, preparation logic in `src/stage1/`, and shared c
 
 ## Dataset
 
-The dataset contains 24 development bundles and 8 reserved bundles. The hand-authored reference lives in `data/development/d01_reference.json`. Labels and hand-worked routes live in `data/expected/`, outside the reviewer. The [freeze manifest](evaluation/freeze.json) records the inputs, labels, generation script, and fake-client scenarios by hash. Stage 1 tests prepare only development bundles. The reserved split is for later frozen scoring.
+The dataset contains 24 development bundles and 8 reserved bundles. The hand-authored reference lives in `data/development/d01_reference.json`. Labels and hand-worked routes live in `data/expected/`, outside the reviewer. The [freeze manifest](evaluation/freeze.json) records the inputs, labels, generation script, and fake-client scenarios by hash. Stage 1 tests prepare only development bundles. The separate reserved scores come from the frozen Stage 4 run.
 
-Run `python -m evaluation.build_cases` from the project root to reproduce the frozen input files from the reference and named edits. Keep the committed freeze manifest as the comparison point when checking for changes. The verification command above checks manifest integrity, the reference oracle, and Stage 1 behavior. The model scenarios are pinned inputs for Stage 3, and the evaluator will score the frozen labels after the behavioral reviewer is implemented.
+Run `python -m evaluation.build_cases` from the project root to reproduce the frozen input files from the reference and named edits. Keep the committed freeze manifest as the comparison point when checking for changes. The verification command above checks manifest integrity, the reference oracle, and Stage 1 behavior. The model scenarios are pinned inputs for the separate Stage 3 failure-handling tests.
 
 ## Run Stage 2
 
@@ -72,3 +72,22 @@ ollama pull qwen3:4b
 For 8B, use `qwen3:8b` in both commands. Record `ollama --version` and the model ID shown by `ollama list` with measured results. Keep those results separate from the fake-client evaluation.
 
 The client connects to `127.0.0.1:11434`, uses CPU, and disables thinking, input truncation, and context shifting. It requests an 8,192-token context and up to 2,048 output tokens. Both attempts share a 240-second budget, including cold model loading. The same evidence validator checks the resulting JSON. A timeout, truncated generation, or rejected response leaves the required model check unresolved and preserves any deterministic blocker.
+
+## Reproduce Stage 4 on CPU
+
+After installing the dependencies, run the offline tests and all three evaluations in one command.
+
+```sh
+.venv/bin/python -m evaluation.run --verify --output reports/stage4-offline.json
+```
+
+The runner verifies the dataset and implementation hashes before opening the
+reserved split. It scores the sampled checkpoint, final reviewer, and ablation
+on the same bundles, with zero model calls. The four model-failure fixtures
+keep their original frozen labels in the reports and are scored against their
+deterministic expectations in this offline run.
+
+- [Frozen offline reports and metrics](evaluation/results/offline.json)
+- [Live Ollama development reports and scorecard](evaluation/results/live-development.json)
+- [Engineering note](docs/engineering-note.pdf)
+- [AI assistance note](docs/ai-assistance.pdf)

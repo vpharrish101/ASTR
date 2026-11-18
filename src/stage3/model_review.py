@@ -279,13 +279,14 @@ def unreviewed(bundle_name, detail, *, required):
 
 
 def assisted_review(bundle: Bundle, client: ModelClient | None = None, *,
-                    script_path: Path | None = None, attempt_limit: Literal[1, 2] = 2) -> AssistedReview:
+                    script_path: Path | None = None, attempt_limit: Literal[1, 2] = 2,
+                    compare_routes: bool = True) -> AssistedReview:
     required = client is not None or script_path is not None
     bundle_bytes = bundle.model_dump_json().encode()
     if len(bundle_bytes) > BUNDLE_BYTES:
         return unreviewed(bundle.id, f"Input exceeds {BUNDLE_BYTES} bytes.", required=required)
     try:
-        report, prepared = review_with_preparation(bundle)
+        report, prepared = review_with_preparation(bundle, compare_routes=compare_routes)
     except RecursionError:
         return unreviewed(bundle.id, "The bundle exceeded the review nesting limit.", required=required)
     error = None
